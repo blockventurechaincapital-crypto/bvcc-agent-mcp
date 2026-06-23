@@ -45,8 +45,20 @@ confirmation. See [GUIDE.md](https://github.com/blockventurechaincapital-crypto/
 
 ## Configuration
 
-Set via your MCP client's `env` block (or a local `.env`). See
-[`.env.example`](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/.env.example).
+**Recommended:** keep the values — above all `AGENT_PRIVATE_KEY` — in a dedicated
+env file and point the server at it with `BVCC_ENV_FILE`, instead of inlining the
+key in your MCP host's config (which gets shared, synced and screenshotted).
+`chmod 600` that file and keep it outside any cloud-synced folder. You *can* still
+inline the variables in the host's `env` block if you prefer; host env wins over
+the file. See [`.env.example`](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/.env.example).
+
+Example `agent.env` (path passed via `BVCC_ENV_FILE`):
+
+```bash
+AGENT_PRIVATE_KEY=0xYOUR_AGENT_KEY
+WALLET_ADDRESS=0xYOUR_WALLET
+CHAIN_ID=42161
+```
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -78,10 +90,8 @@ npm test          # builds + stdio smoke test (no chain calls)
 
 ```bash
 claude mcp add bvcc-agent-wallet \
-  --env AGENT_PRIVATE_KEY=0x... \
-  --env WALLET_ADDRESS=0x... \
-  --env CHAIN_ID=42161 \
-  -- node /absolute/path/to/bvcc-agent-mcp/dist/server.js
+  --env BVCC_ENV_FILE=/secure/agent.env \
+  -- npx -y @bvcc/agent-mcp
 ```
 
 ### Cursor / Claude app (`mcp.json`)
@@ -90,19 +100,18 @@ claude mcp add bvcc-agent-wallet \
 {
   "mcpServers": {
     "bvcc-agent-wallet": {
-      "command": "node",
-      "args": ["/absolute/path/to/bvcc-agent-mcp/dist/server.js"],
-      "env": {
-        "AGENT_PRIVATE_KEY": "0x...",
-        "WALLET_ADDRESS": "0x...",
-        "CHAIN_ID": "42161"
-      }
+      "command": "npx",
+      "args": ["-y", "@bvcc/agent-mcp"],
+      "env": { "BVCC_ENV_FILE": "/secure/agent.env" }
     }
   }
 }
 ```
 
-After `npm publish` you can swap the local path for `npx -y @bvcc/agent-mcp`.
+The key lives in `agent.env`, not in the config above. If you'd rather inline it,
+replace the `env` block with `AGENT_PRIVATE_KEY` / `WALLET_ADDRESS` / `CHAIN_ID`
+directly (less safe — the key sits in the host config). Pin a version for
+reproducibility, e.g. `@bvcc/agent-mcp@0.1.1` (see [Upgrading](#upgrading)).
 
 ## Upgrading
 

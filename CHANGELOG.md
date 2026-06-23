@@ -8,7 +8,14 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
-## [0.1.0] — Unreleased
+## [0.1.1] — 2026-06-23
+
+### Changed
+- Docs: the README now recommends keeping `AGENT_PRIVATE_KEY` in a dedicated
+  `BVCC_ENV_FILE` instead of inlining it in the MCP host config, and the connect
+  examples use `npx -y @bvcc/agent-mcp`. No code/behavior change.
+
+## [0.1.0] — 2026-06-23
 
 First public release.
 
@@ -33,4 +40,5 @@ First public release.
 - The agent key is read from the environment, used locally to sign, never
   transmitted. Published tarball ships no sourcemaps.
 
+[0.1.1]: https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/releases/tag/v0.1.1
 [0.1.0]: https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/releases/tag/v0.1.0
