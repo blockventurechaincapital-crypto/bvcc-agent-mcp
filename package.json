@@ -1,0 +1,59 @@
+{
+  "name": "@bvcc/agent-mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server exposing a BVCC Agent Wallet to AI runtimes (Claude Code, Cursor, Claude app). Tools are generated from the @bvcc/agent-sdk capability catalog.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "bvcc-agent-mcp": "./dist/server.js"
+  },
+  "files": [
+    "dist",
+    "QUICKSTART.md",
+    "GUIDE.md",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "test": "npm run build && node test/smoke.mjs",
+    "prepublishOnly": "npm test",
+    "inspect": "npx @modelcontextprotocol/inspector tsx src/server.ts"
+  },
+  "keywords": [
+    "bvcc",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "smart-wallet",
+    "ethereum",
+    "viem"
+  ],
+  "homepage": "https://bvccwallet.blockventurechaincapital.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "viem": "^2.21.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@bvcc/agent-sdk": "file:../bvcc-agent-sdk",
+    "@types/node": "^26.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
