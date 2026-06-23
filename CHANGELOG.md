@@ -8,6 +8,13 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.1.2] — 2026-06-23
+
+### Changed
+- Bundles `@bvcc/agent-sdk` 0.1.2: the `getNativeBalance` and `getTokenBalances`
+  tools now return a `formatted` amount that includes the token symbol
+  (e.g. `"0.1951 USDC"`), so small models stop misreading the raw base-unit field.
+
 ## [0.1.1] — 2026-06-23
 
 ### Changed
