@@ -1,0 +1,44 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema describing the configuration this MCP server needs.
+    type: object
+    required:
+      - agentPrivateKey
+      - walletAddress
+      - chainId
+    properties:
+      agentPrivateKey:
+        type: string
+        description: Agent EOA private key (0x + 64 hex). Used locally to sign only; never transmitted.
+      walletAddress:
+        type: string
+        description: The BVCC Agent Wallet address this agent operates (0x...).
+      chainId:
+        type: string
+        default: "42161"
+        description: "Default chain id: 42161 Arbitrum, 56 BNB Chain, 1 Ethereum, 8453 Base, 421614 Arbitrum Sepolia. Every tool also accepts an optional per-call network."
+      rpcUrl:
+        type: string
+        description: Optional custom RPC for the default chain (comma-separated list allowed for failover). A public default is used otherwise.
+      readonly:
+        type: boolean
+        default: false
+        description: Expose only read/simulate tools (no fund-moving writes).
+  commandFunction:
+    # Produces the CLI command + env to start the MCP over stdio.
+    |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@bvcc/agent-mcp@latest'],
+      env: Object.assign(
+        {
+          AGENT_PRIVATE_KEY: config.agentPrivateKey,
+          WALLET_ADDRESS: config.walletAddress,
+          CHAIN_ID: String(config.chainId || '42161')
+        },
+        config.rpcUrl ? { RPC_URL: config.rpcUrl } : {},
+        config.readonly ? { BVCC_MCP_READONLY: 'true' } : {}
+      )
+    })
