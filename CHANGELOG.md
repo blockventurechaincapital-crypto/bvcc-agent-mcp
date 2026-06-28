@@ -8,6 +8,13 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.1.4] — 2026-06-28
+
+### Added
+- `mcpName` field in `package.json` and a `server.json` manifest to publish the
+  server in the official MCP Registry (`registry.modelcontextprotocol.io`), under
+  the `com.blockventurechaincapital/bvcc-agent-wallet` namespace.
+
 ## [0.1.2] — 2026-06-23
 
 ### Changed

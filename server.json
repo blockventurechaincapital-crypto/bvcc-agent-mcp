@@ -1,0 +1,54 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.blockventurechaincapital/bvcc-agent-wallet",
+  "description": "Operate a non-custodial BVCC Agent Wallet on-chain from an AI agent: balances, send native/ERC-20, approve, and swap on Uniswap v3/v4 across Ethereum, BNB Chain, Arbitrum and Base. Every spend/recipient/token limit is enforced on-chain by the wallet contract.",
+  "version": "0.1.4",
+  "repository": {
+    "url": "https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@bvcc/agent-mcp",
+      "version": "0.1.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "AGENT_PRIVATE_KEY",
+          "description": "Agent EOA private key (0x + 64 hex). Used locally to sign only; never transmitted.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "WALLET_ADDRESS",
+          "description": "The BVCC Agent Wallet address this agent operates (0x...).",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "CHAIN_ID",
+          "description": "Default chain id: 42161 Arbitrum, 56 BNB Chain, 1 Ethereum, 8453 Base, 421614 Arbitrum Sepolia. Every tool also accepts an optional per-call network.",
+          "isRequired": true,
+          "isSecret": false,
+          "default": "42161"
+        },
+        {
+          "name": "RPC_URL",
+          "description": "Optional custom RPC for the default chain (comma-separated list allowed for failover). Public default used otherwise. Per-chain override via RPC_URL_<chainId>.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "BVCC_MCP_READONLY",
+          "description": "Set to 'true' to expose only read/simulate tools (no fund-moving writes).",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

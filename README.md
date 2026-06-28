@@ -111,7 +111,7 @@ claude mcp add bvcc-agent-wallet \
 The key lives in `agent.env`, not in the config above. If you'd rather inline it,
 replace the `env` block with `AGENT_PRIVATE_KEY` / `WALLET_ADDRESS` / `CHAIN_ID`
 directly (less safe — the key sits in the host config). Pin a version for
-reproducibility, e.g. `@bvcc/agent-mcp@0.1.1` (see [Upgrading](#upgrading)).
+reproducibility, e.g. `@bvcc/agent-mcp@0.1.4` (see [Upgrading](#upgrading)).
 
 ## Upgrading
 
@@ -121,7 +121,7 @@ new capabilities (e.g. a future Aave release) — you never install or update
 
 1. **Pin the version** in your config for reproducibility:
    ```json
-   "args": ["-y", "@bvcc/agent-mcp@0.1.0"]
+   "args": ["-y", "@bvcc/agent-mcp@0.1.4"]
    ```
    `npx` caches, so an unpinned `@bvcc/agent-mcp` can keep running an old build.
    To upgrade, bump the number (e.g. `@0.2.0`) — or use `@latest` if you prefer.

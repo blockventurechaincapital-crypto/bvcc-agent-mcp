@@ -27,7 +27,7 @@ import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS } f
 import { stringify, toJsonSafe } from "./json.js";
 import { redactSecrets } from "./redact.js";
 
-const PKG_VERSION = "0.1.2";
+const PKG_VERSION = "0.1.4";
 
 const INSTRUCTIONS = `This server operates a BVCC Agent Wallet on-chain.
 
