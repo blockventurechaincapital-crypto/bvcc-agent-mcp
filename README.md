@@ -2,6 +2,12 @@
   <img src="https://raw.githubusercontent.com/blockventurechaincapital-crypto/bvcc-agent-mcp/main/assets/bvcc_wallet.png" alt="BVCC Wallet" width="180" />
 </p>
 
+<p align="center">
+  <a href="https://glama.ai/mcp/servers/blockventurechaincapital-crypto/bvcc-agent-mcp">
+    <img src="https://glama.ai/mcp/servers/blockventurechaincapital-crypto/bvcc-agent-mcp/badges/card.svg" alt="bvcc-agent-mcp MCP server" />
+  </a>
+</p>
+
 # @bvcc/agent-mcp
 
 **Model Context Protocol server for a BVCC Agent Wallet.** It lets MCP-speaking
