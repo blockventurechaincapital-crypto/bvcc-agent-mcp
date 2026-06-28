@@ -27,9 +27,15 @@ import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS } f
 import { stringify, toJsonSafe } from "./json.js";
 import { redactSecrets } from "./redact.js";
 
-const PKG_VERSION = "0.1.4";
+const PKG_VERSION = "0.1.5";
 
 const INSTRUCTIONS = `This server operates a BVCC Agent Wallet on-chain.
+
+SETUP (prerequisite — tell the user if it isn't done):
+- This server needs an existing BVCC Agent Wallet with this agent's address authorized on it.
+- If getAgentStatus shows the agent is NOT authorized (or AGENT_PRIVATE_KEY / WALLET_ADDRESS /
+  CHAIN_ID are missing), tell the user to create an Agent Wallet and authorize this agent's
+  address at https://bvccwallet.blockventurechaincapital.com, then set those env vars and restart.
 
 WORKFLOW (do this in order):
 1. Call getAgentStatus / getCapabilities first to learn what this agent may do

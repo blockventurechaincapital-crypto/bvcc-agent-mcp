@@ -8,6 +8,14 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.1.5] — 2026-06-28
+
+### Added
+- Onboarding guidance: server `INSTRUCTIONS` now include a SETUP section, and
+  `getAgentStatus` returns a `suggestedAction` pointing to
+  `https://bvccwallet.blockventurechaincapital.com` when the agent is not yet
+  authorized (bundles `@bvcc/agent-sdk` 0.1.3).
+
 ## [0.1.4] — 2026-06-28
 
 ### Added

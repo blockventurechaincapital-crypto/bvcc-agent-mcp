@@ -1,6 +1,6 @@
 {
   "name": "@bvcc/agent-mcp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "mcpName": "com.blockventurechaincapital/bvcc-agent-wallet",
   "description": "Model Context Protocol server exposing a BVCC Agent Wallet to AI runtimes (Claude Code, Cursor, Claude app). Tools are generated from the @bvcc/agent-sdk capability catalog.",
   "license": "MIT",
@@ -56,5 +56,8 @@
     "tsup": "^8.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
+  },
+  "overrides": {
+    "ws": "^8.21.0"
   }
 }
