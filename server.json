@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.blockventurechaincapital/bvcc-agent-wallet",
-  "description": "Operate a non-custodial BVCC Agent Wallet on-chain from an AI agent: balances, send native/ERC-20, approve, and swap on Uniswap v3/v4 across Ethereum, BNB Chain, Arbitrum and Base. Every spend/recipient/token limit is enforced on-chain by the wallet contract.",
+  "description": "Non-custodial BVCC Agent Wallet on-chain for AI agents: balances, transfers, approvals, swaps.",
   "version": "0.1.4",
   "repository": {
     "url": "https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp",
