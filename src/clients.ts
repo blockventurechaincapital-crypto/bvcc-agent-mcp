@@ -43,13 +43,16 @@ const NAME_TO_CHAIN: Record<string, number> = {
   "arbitrum-one": 42161,
   arb: 42161,
   base: 8453,
+  polygon: 137,
+  matic: 137,
+  pol: 137,
   "arbitrum-sepolia": 421614,
   "arb-sepolia": 421614,
   sepolia: 421614,
 };
 
 /** Names of the supported networks, for tool descriptions / error messages. */
-export const SUPPORTED_NETWORKS = "ethereum, bsc, arbitrum, base, arbitrum-sepolia";
+export const SUPPORTED_NETWORKS = "ethereum, bsc, arbitrum, base, polygon, arbitrum-sepolia";
 
 /**
  * Resolve a `network` arg (chain id number, numeric string, or friendly name) to

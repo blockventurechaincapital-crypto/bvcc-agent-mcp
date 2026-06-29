@@ -78,7 +78,7 @@ CHAIN_ID=42161
 
 **Multi-network:** one server operates the agent on any supported chain. Every
 tool takes an optional `network` (chain id or name: `ethereum`, `bsc`, `arbitrum`,
-`base`, `arbitrum-sepolia`), defaulting to `CHAIN_ID` — so you can say "swap on
+`base`, `polygon`, `arbitrum-sepolia`), defaulting to `CHAIN_ID` — so you can say "swap on
 bsc" without restarting. The wallet address is the same on every chain (CREATE2);
 the agent must be authorized on each chain you use.
 

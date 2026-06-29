@@ -27,7 +27,7 @@ import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS } f
 import { stringify, toJsonSafe } from "./json.js";
 import { redactSecrets } from "./redact.js";
 
-const PKG_VERSION = "0.1.5";
+const PKG_VERSION = "0.1.6";
 
 const INSTRUCTIONS = `This server operates a BVCC Agent Wallet on-chain.
 
@@ -48,7 +48,7 @@ WORKFLOW (do this in order):
 
 KEY FACTS:
 - This server is multi-network. Every tool takes an optional "network" (a chain id
-  like 42161 or a name: ethereum, bsc, arbitrum, base, arbitrum-sepolia). Omit it to
+  like 42161 or a name: ethereum, bsc, arbitrum, base, polygon, arbitrum-sepolia). Omit it to
   use the server's default chain. The same wallet address exists on every chain, but
   the agent must be authorized on the chain you target or the action reverts.
 - Amounts are human decimal strings ("0.1"); tokens are symbols ("USDC") or 0x addresses.

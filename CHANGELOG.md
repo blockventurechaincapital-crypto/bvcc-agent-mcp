@@ -8,6 +8,13 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.1.6] — 2026-06-29
+
+### Added
+- **Polygon** support (chain id `137`; names `polygon` | `matic` | `pol`). Bundles
+  `@bvcc/agent-sdk` 0.1.4. Supported networks are now ethereum, bsc, arbitrum, base,
+  polygon and arbitrum-sepolia.
+
 ## [0.1.5] — 2026-06-28
 
 ### Added
