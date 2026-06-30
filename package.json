@@ -10,6 +10,7 @@
   },
   "files": [
     "dist",
+    "agent-actions.json",
     "QUICKSTART.md",
     "GUIDE.md",
     "README.md",
@@ -46,6 +47,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@emilia-protocol/require-receipt": "^0.4.1",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "viem": "^2.21.0",
     "zod": "^3.25.76"

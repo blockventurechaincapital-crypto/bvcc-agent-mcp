@@ -1,0 +1,64 @@
+{
+  "@version": "EP-ACTION-RISK-MANIFEST-v0.1",
+  "service": {
+    "name": "bvcc-agent-wallet",
+    "manifest_url": "/.well-known/agent-actions.json"
+  },
+  "actions": [
+    {
+      "id": "mcp.sendNative",
+      "description": "Irreversible: signs and broadcasts a native-asset transfer on-chain. Requires a named human's authorization receipt.",
+      "match": { "protocol": "mcp", "tool": "sendNative" },
+      "action_type": "bvcc.wallet.sendNative",
+      "risk": "critical",
+      "receipt_required": true,
+      "assurance_class": "class_a",
+      "max_age_sec": 900,
+      "quorum": { "required": false }
+    },
+    {
+      "id": "mcp.sendToken",
+      "description": "Irreversible: signs and broadcasts an ERC-20 token transfer on-chain. Requires a named human's authorization receipt.",
+      "match": { "protocol": "mcp", "tool": "sendToken" },
+      "action_type": "bvcc.wallet.sendToken",
+      "risk": "critical",
+      "receipt_required": true,
+      "assurance_class": "class_a",
+      "max_age_sec": 900,
+      "quorum": { "required": false }
+    },
+    {
+      "id": "mcp.approve",
+      "description": "Irreversible: signs and broadcasts an ERC-20 approval (spending allowance) on-chain. Requires a named human's authorization receipt.",
+      "match": { "protocol": "mcp", "tool": "approve" },
+      "action_type": "bvcc.wallet.approve",
+      "risk": "high",
+      "receipt_required": true,
+      "assurance_class": "class_a",
+      "max_age_sec": 900,
+      "quorum": { "required": false }
+    },
+    {
+      "id": "mcp.swapV3",
+      "description": "Irreversible: signs and broadcasts a Uniswap v3 swap on-chain. Requires a named human's authorization receipt.",
+      "match": { "protocol": "mcp", "tool": "swapV3" },
+      "action_type": "bvcc.wallet.swapV3",
+      "risk": "critical",
+      "receipt_required": true,
+      "assurance_class": "class_a",
+      "max_age_sec": 900,
+      "quorum": { "required": false }
+    },
+    {
+      "id": "mcp.swapV4",
+      "description": "Irreversible: signs and broadcasts a Uniswap v4 swap on-chain. Requires a named human's authorization receipt.",
+      "match": { "protocol": "mcp", "tool": "swapV4" },
+      "action_type": "bvcc.wallet.swapV4",
+      "risk": "critical",
+      "receipt_required": true,
+      "assurance_class": "class_a",
+      "max_age_sec": 900,
+      "quorum": { "required": false }
+    }
+  ]
+}
