@@ -92,15 +92,19 @@ export function loadReceiptGating(env: NodeJS.ProcessEnv = process.env): Receipt
 
   const manifestPath = env.BVCC_MCP_ACTIONS_FILE?.trim() || resolve(HERE, "../agent-actions.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as unknown;
+  // Only advertise a manifest URL the operator actually serves (from their
+  // manifest's service.manifest_url); never point agents at a hardcoded 404.
   const manifestUrl =
-    (manifest as { service?: { manifest_url?: string } }).service?.manifest_url ||
-    "/.well-known/agent-actions.json";
+    (manifest as { service?: { manifest_url?: string } }).service?.manifest_url || undefined;
 
   const trustedKeys = (env.BVCC_MCP_RECEIPT_KEYS ?? "")
     .split(",")
     .map((k) => k.trim())
     .filter(Boolean);
-  const allowInlineKey = trustedKeys.length === 0; // demo fallback; off once keys are pinned.
+  // Secure by default: accept self-signed (inline-key) receipts ONLY with an
+  // explicit non-production opt-in. Otherwise guard() fails closed below rather
+  // than broadcast a transfer authorized by an untrusted key.
+  const allowInlineKey = trustedKeys.length === 0 && truthy(env.BVCC_MCP_ALLOW_INLINE_KEY);
 
   // One gate per action type (each keeps its own one-time-consumption store).
   const gates = new Map<string, ReceiptGate>();
@@ -126,6 +130,23 @@ export function loadReceiptGating(env: NodeJS.ProcessEnv = process.env): Receipt
     async guard(cap, args, receipt, invoke) {
       const req = findActionRequirement(manifest, { protocol: "mcp", tool: cap.id });
       if (!req || !req.receipt_required) return { kind: "allow" };
+
+      // FAIL CLOSED: enforcement is on but no issuer key is trusted and inline
+      // keys are not explicitly enabled — refuse rather than broadcast an on-chain
+      // transfer authorized only by a self-signed receipt.
+      if (trustedKeys.length === 0 && !allowInlineKey) {
+        return {
+          kind: "refuse",
+          status: 500,
+          body: {
+            rejected: { reason: "receipt_enforcement_misconfigured" },
+            detail:
+              "Set BVCC_MCP_RECEIPT_KEYS to the issuer key(s) you trust "
+              + "(or BVCC_MCP_ALLOW_INLINE_KEY=1 for non-production demos); "
+              + "refusing to broadcast under a self-signed receipt.",
+          },
+        };
+      }
 
       const r = await gateFor(req).run(
         receipt,

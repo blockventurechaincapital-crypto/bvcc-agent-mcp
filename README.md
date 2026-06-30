@@ -51,7 +51,7 @@ token), or it is refused **before** the transaction is signed or broadcast:
 |---|---|
 | Missing receipt | refused (`428 Receipt Required`) |
 | Valid receipt | the tx is signed + broadcast (receipt consumed once) |
-| Replayed receipt | refused (one-time consumption) |
+| Replayed receipt | refused (one-time consumption — process-local store by default) |
 | Forged / wrong-args receipt | refused (signature / action-binding fails) |
 
 It is fully **offline** — the verifier is [`@emilia-protocol/require-receipt`](https://www.npmjs.com/package/@emilia-protocol/require-receipt)
@@ -60,9 +60,12 @@ require a receipt (and at what assurance) is declared in
 [`agent-actions.json`](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/agent-actions.json).
 This is portable accountability evidence the operator keeps for its own liability —
 **not** auth and **not** permissions; the contract still enforces every on-chain
-limit. **Production:** set `BVCC_MCP_RECEIPT_KEYS` to the issuer SPKI key(s) you
-trust; without it the gate accepts a receipt's own inline key (integrity only, demo).
-Spec: IETF I-D `draft-schrock-ep-authorization-receipts`.
+limit. **Secure by default:** set `BVCC_MCP_RECEIPT_KEYS` to the issuer SPKI key(s)
+you trust. With receipts enabled and no key pinned, the gate **fails closed** — a
+write capability is refused (`receipt_enforcement_misconfigured`), never broadcast
+under a self-signed receipt. `BVCC_MCP_ALLOW_INLINE_KEY=1` accepts inline keys for
+**non-production demos only**. Replay protection is process-local by default; back
+it with a durable store for multi-instance. Spec: IETF I-D `draft-schrock-ep-authorization-receipts`.
 
 ## Tools
 
@@ -104,7 +107,8 @@ CHAIN_ID=42161
 | `BVCC_ENV_FILE` | no | Path to a dedicated env file to load (keeps the key out of the host config). Host env wins over it. |
 | `BVCC_MCP_READONLY` | no | `true` exposes only read/simulate tools. |
 | `BVCC_MCP_RECEIPTS` | no | `true` requires a per-action authorization receipt on every write (opt-in Receipt Required; off by default). |
-| `BVCC_MCP_RECEIPT_KEYS` | no | Comma-separated issuer SPKI key(s) to trust for receipts. Recommended in production; without it the gate accepts a receipt's own inline key (demo). |
+| `BVCC_MCP_RECEIPT_KEYS` | for enforcement | Comma-separated issuer SPKI key(s) to trust. With receipts enabled and none set, the gate **fails closed** (refuses writes) rather than accept a self-signed receipt. |
+| `BVCC_MCP_ALLOW_INLINE_KEY` | no | `1` accepts self-signed (inline-key) receipts — **non-production demos only**. |
 | `BVCC_MCP_ACTIONS_FILE` | no | Path to a custom action-risk manifest (defaults to the bundled `agent-actions.json`). |
 
 **Multi-network:** one server operates the agent on any supported chain. Every
