@@ -35,6 +35,34 @@ dashboard.
   and **never transmitted**. BVCC does not receive, store, or custody it.
 - Tools are exposed **explicitly** via the SDK catalog — nothing is auto-discovered.
 - Set `BVCC_MCP_READONLY=true` to expose only read/simulate tools (no writes).
+- **Opt-in Receipt Required** — set `BVCC_MCP_RECEIPTS=true` to additionally require a
+  per-action authorization receipt on every `write` (see below). Off by default.
+
+### Receipt Required (opt-in)
+
+`BVCC_MCP_READONLY` is all-or-nothing. If you want fund-moving writes *available* but
+*gated* — each transfer must carry proof that a named human approved that exact
+action — set `BVCC_MCP_RECEIPTS=true`. With it on, every 🔴 write
+(`sendNative` / `sendToken` / `approve` / `swapV3` / `swapV4`) must arrive with a
+verifiable authorization **receipt** bound to its key args (recipient / amount /
+token), or it is refused **before** the transaction is signed or broadcast:
+
+| Check | Behavior |
+|---|---|
+| Missing receipt | refused (`428 Receipt Required`) |
+| Valid receipt | the tx is signed + broadcast (receipt consumed once) |
+| Replayed receipt | refused (one-time consumption) |
+| Forged / wrong-args receipt | refused (signature / action-binding fails) |
+
+It is fully **offline** — the verifier is [`@emilia-protocol/require-receipt`](https://www.npmjs.com/package/@emilia-protocol/require-receipt)
+(Apache-2.0); no API key, no account, no external server is trusted. Which actions
+require a receipt (and at what assurance) is declared in
+[`agent-actions.json`](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/agent-actions.json).
+This is portable accountability evidence the operator keeps for its own liability —
+**not** auth and **not** permissions; the contract still enforces every on-chain
+limit. **Production:** set `BVCC_MCP_RECEIPT_KEYS` to the issuer SPKI key(s) you
+trust; without it the gate accepts a receipt's own inline key (integrity only, demo).
+Spec: IETF I-D `draft-schrock-ep-authorization-receipts`.
 
 ## Tools
 
@@ -75,6 +103,9 @@ CHAIN_ID=42161
 | `RPC_URL_<chainId>` | no | Per-chain RPC override, e.g. `RPC_URL_56`. |
 | `BVCC_ENV_FILE` | no | Path to a dedicated env file to load (keeps the key out of the host config). Host env wins over it. |
 | `BVCC_MCP_READONLY` | no | `true` exposes only read/simulate tools. |
+| `BVCC_MCP_RECEIPTS` | no | `true` requires a per-action authorization receipt on every write (opt-in Receipt Required; off by default). |
+| `BVCC_MCP_RECEIPT_KEYS` | no | Comma-separated issuer SPKI key(s) to trust for receipts. Recommended in production; without it the gate accepts a receipt's own inline key (demo). |
+| `BVCC_MCP_ACTIONS_FILE` | no | Path to a custom action-risk manifest (defaults to the bundled `agent-actions.json`). |
 
 **Multi-network:** one server operates the agent on any supported chain. Every
 tool takes an optional `network` (chain id or name: `ethereum`, `bsc`, `arbitrum`,

@@ -26,6 +26,7 @@ import { loadEnvFile } from "./loadEnv.js";
 import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS } from "./clients.js";
 import { stringify, toJsonSafe } from "./json.js";
 import { redactSecrets } from "./redact.js";
+import { loadReceiptGating } from "./receiptGate.js";
 
 const PKG_VERSION = "0.1.6";
 
@@ -88,14 +89,29 @@ const networkParam = z
       "Defaults to the server's CHAIN_ID. The agent must be authorized on that chain.",
   );
 
-/** The raw Zod shape MCP wants, plus the shared `network` selector. Every catalog
+/** Optional authorization receipt, advertised on write tools only when the
+ * opt-in Receipt Required gate is enabled. The client passes the receipt object
+ * (or its JSON) it obtained from a human approval; the gate verifies + binds it. */
+const receiptParam = z
+  .unknown()
+  .optional()
+  .describe(
+    "Authorization receipt proving a named human approved THIS exact transfer. " +
+      "Required because this server runs with Receipt Required enabled; without a " +
+      "valid receipt the transaction is refused before broadcast.",
+  );
+
+/** The raw Zod shape MCP wants, plus the shared `network` selector (and, when the
+ * Receipt Required gate guards this tool, an optional `receipt`). Every catalog
  * entry uses z.object(...). */
-function rawShape(cap: Capability<never>): z.ZodRawShape {
+function rawShape(cap: Capability<never>, gated: boolean): z.ZodRawShape {
   const params = cap.params as unknown as { shape?: z.ZodRawShape };
   if (!params.shape) {
     throw new Error(`Capability "${cap.id}" params must be a z.object (got no .shape).`);
   }
-  return { ...params.shape, network: networkParam };
+  const shape: z.ZodRawShape = { ...params.shape, network: networkParam };
+  if (gated) shape.receipt = receiptParam;
+  return shape;
 }
 
 function kindLabel(kind: CapabilityKind): string {
@@ -115,6 +131,10 @@ async function main(): Promise<void> {
   const getClient = createClientFactory(config);
   const defaultClient = getClient(config.chainId);
 
+  // OPT-IN Receipt Required gate (null unless BVCC_MCP_RECEIPTS is enabled).
+  // When null, every code path below is byte-identical to before.
+  const receiptGating = loadReceiptGating();
+
   const server = new McpServer(
     { name: "bvcc-agent-wallet", version: PKG_VERSION },
     { instructions: INSTRUCTIONS },
@@ -128,17 +148,45 @@ async function main(): Promise<void> {
       {
         title: cap.title,
         description: `[${kindLabel(cap.kind)}] ${cap.description}`,
-        inputSchema: rawShape(cap),
+        inputSchema: rawShape(cap, receiptGating != null && cap.kind === "write"),
         annotations: annotationsFor(cap),
       },
       async (args: unknown) => {
         try {
-          // Pull the per-call network selector out before handing args to the
-          // catalog (its schema doesn't include `network`); route to that chain.
-          const { network, ...rest } = (args ?? {}) as Record<string, unknown>;
+          // Pull the per-call network selector (and, when receipt gating is on,
+          // the authorization receipt) out before handing args to the catalog —
+          // its schema includes neither. Route to the selected chain.
+          const { network, receipt, _receipt, ...rest } = (args ?? {}) as Record<string, unknown>;
           const chainId = resolveChainId(network as string | number | undefined, config.chainId);
           const client = getClient(chainId);
-          const result = await cap.invoke(client, rest as never);
+          const invoke = () => cap.invoke(client, rest as never);
+
+          // OPT-IN: when gating is enabled, a `write` (fund-moving) capability must
+          // arrive with a verifiable authorization receipt bound to THIS action +
+          // its key args, or it is refused before any tx is broadcast. read/simulate
+          // tools and the unguarded default (receiptGating === null) pass straight through.
+          let result: unknown;
+          if (receiptGating && cap.kind === "write") {
+            const outcome = await receiptGating.guard(cap, rest, receipt ?? _receipt ?? null, invoke);
+            if (outcome.kind === "refuse") {
+              return {
+                isError: true,
+                content: [{ type: "text", text: `Receipt required for ${cap.id}: ${stringify(outcome.body)}` }],
+                structuredContent: { receiptRequired: toJsonSafe(outcome.body) },
+              };
+            }
+            if (outcome.kind === "ran") {
+              const ran = outcome.result;
+              result =
+                ran && typeof ran === "object"
+                  ? { ...(ran as object), evidence: outcome.evidence }
+                  : { result: ran, evidence: outcome.evidence };
+            } else {
+              result = await invoke(); // kind === "allow": tool not listed receipt_required
+            }
+          } else {
+            result = await invoke();
+          }
           return {
             content: [{ type: "text", text: stringify(result) }],
             structuredContent: { result: toJsonSafe(result) },
@@ -162,7 +210,8 @@ async function main(): Promise<void> {
     `[bvcc-agent-mcp v${PKG_VERSION}] wallet=${config.walletAddress} ` +
       `agent=${defaultClient.agentAddress} chain=${config.chainId} (default, multi-network) ` +
       `rpcs=${rpcCount}${rpcCount > 1 ? " (failover)" : ""} ` +
-      `mode=${config.readOnly ? "read-only" : "full"} tools=${exposed.length}`,
+      `mode=${config.readOnly ? "read-only" : "full"} ` +
+      `receipts=${receiptGating ? "required" : "off"} tools=${exposed.length}`,
   );
 
   const transport = new StdioServerTransport();
