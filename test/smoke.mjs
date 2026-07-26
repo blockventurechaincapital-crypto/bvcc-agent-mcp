@@ -14,7 +14,7 @@ const serverPath = resolve(__dirname, "../dist/server.js");
 const env = {
   ...process.env,
   AGENT_PRIVATE_KEY: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-  WALLET_ADDRESS: "0x727D0806DFaB184eC9006af1B54d3fC3EfD801ab",
+  WALLET_ADDRESS: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", // placeholder — smoke does tools/list only, no chain calls
   CHAIN_ID: "42161",
 };
 
@@ -36,7 +36,7 @@ function runCase(label, extraEnv, expectWrites, opts = {}) {
         if (!line) continue;
         const msg = JSON.parse(line);
         if (msg.id != null) responses.set(msg.id, msg);
-        if (msg.id === 2) finish();
+        if (msg.id === 3) finish();
       }
     });
 
@@ -51,8 +51,9 @@ function runCase(label, extraEnv, expectWrites, opts = {}) {
       const ids = tools.map((t) => t.name).sort();
       const writes = tools.filter((t) => t.annotations?.destructiveHint).map((t) => t.name);
       const allHaveNetwork = tools.every((t) => t.inputSchema?.properties?.network);
+      const prompts = (responses.get(3)?.result?.prompts ?? []).map((p) => p.name).sort();
       child.kill();
-      resolveCase({ label, ids, writes, expectWrites, allHaveNetwork, stderr: stderr.join("") });
+      resolveCase({ label, ids, writes, prompts, expectWrites, allHaveNetwork, stderr: stderr.join("") });
     }
 
     // Handshake
@@ -68,6 +69,7 @@ function runCase(label, extraEnv, expectWrites, opts = {}) {
     });
     send({ jsonrpc: "2.0", method: "notifications/initialized" });
     send({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
+    send({ jsonrpc: "2.0", id: 3, method: "prompts/list", params: {} });
 
     setTimeout(() => {
       child.kill();
@@ -76,11 +78,28 @@ function runCase(label, extraEnv, expectWrites, opts = {}) {
   });
 }
 
-const EXPECTED_ALL = [
+// Help tools (module "meta") are always exposed, regardless of BVCC_MCP_MODULES,
+// so every module surface below includes them.
+const META = ["getGuide", "listGuides"];
+
+// The exact "core" module surface (module: undefined → core). Pinned with
+// BVCC_MCP_MODULES=core so this stays deterministic as other modules (aave, lp)
+// are added — those get their own cases below.
+const EXPECTED_CORE = [
   "approve", "buildSwapPlan", "dryRunSendNative", "dryRunSendToken", "dryRunSwapV3",
   "dryRunSwapV4", "getAgentStatus", "getCapabilities", "getNativeBalance",
   "getRemaining", "getTokenBalances", "needsApproval", "sendNative", "sendToken",
-  "swapV3", "swapV4",
+  "swapFromNative", "swapToNative", "swapV3", "swapV4",
+  ...META,
+].sort();
+
+// The Uniswap LP module surface (v3 + v4).
+const EXPECTED_LP = [
+  "addLiquidityV3", "burnV3", "collectFeesV3", "dryRunAddLiquidityV3",
+  "dryRunRemoveLiquidityV3", "getV3Position", "removeLiquidityV3",
+  "addLiquidityV4", "burnV4", "collectFeesV4", "dryRunAddLiquidityV4",
+  "dryRunRemoveLiquidityV4", "getV4Position", "removeLiquidityV4",
+  ...META,
 ].sort();
 
 let failed = false;
@@ -89,19 +108,32 @@ function assert(cond, msg) {
   else console.log("  ✓ " + msg);
 }
 
-const full = await runCase("full mode", {}, true);
-console.log(`\n[${full.label}] ${full.ids.length} tools`);
-assert(full.ids.length === 16, "exposes 16 tools");
-assert(JSON.stringify(full.ids) === JSON.stringify(EXPECTED_ALL), "tool ids match catalog");
-assert(full.writes.length === 5, "5 tools flagged destructive (writes)");
-assert(full.allHaveNetwork, "every tool exposes an optional `network` selector");
-assert(full.stderr.includes("multi-network"), "startup banner reports multi-network");
+const core = await runCase("core mode", { BVCC_MCP_MODULES: "core" }, true);
+console.log(`\n[${core.label}] ${core.ids.length} tools`);
+assert(core.ids.length === 20, "exposes 20 tools (18 core + 2 meta guides)");
+assert(JSON.stringify(core.ids) === JSON.stringify(EXPECTED_CORE), "core tool ids match catalog");
+assert(core.writes.length === 7, "7 core tools flagged destructive (writes)");
+assert(core.allHaveNetwork, "every tool exposes an optional `network` selector");
+assert(core.stderr.includes("multi-network"), "startup banner reports multi-network");
+assert(
+  JSON.stringify(core.prompts) ===
+    JSON.stringify(["guide-getting-started", "guide-lending", "guide-liquidity", "guide-swaps"]),
+  "4 guide prompts registered (one per area), independent of module filter",
+);
 
-const ro = await runCase("read-only mode", { BVCC_MCP_READONLY: "true" }, false);
+const ro = await runCase("read-only mode", { BVCC_MCP_READONLY: "true", BVCC_MCP_MODULES: "core" }, false);
 console.log(`\n[${ro.label}] ${ro.ids.length} tools`);
-assert(ro.ids.length === 11, "read-only exposes 11 tools (no writes)");
+assert(ro.ids.length === 13, "read-only exposes 13 tools (11 core reads + 2 meta guides, no writes)");
 assert(ro.writes.length === 0, "no destructive tools in read-only mode");
 assert(ro.stderr.includes("mode=read-only"), "startup banner reports read-only mode");
+
+// LP module (Uniswap v3 + v4 liquidity) — enabled on its own to prove module isolation.
+const lp = await runCase("lp module", { BVCC_MCP_MODULES: "lp" }, true);
+console.log(`\n[${lp.label}] ${lp.ids.length} tools`);
+assert(lp.ids.length === 16, "lp module exposes 16 tools (14 v3+v4 + 2 meta guides)");
+assert(JSON.stringify(lp.ids) === JSON.stringify(EXPECTED_LP), "lp tool ids match catalog");
+assert(lp.writes.length === 8, "8 lp tools flagged destructive (v3+v4 mint/remove/collect/burn)");
+assert(!lp.ids.includes("sendNative"), "lp module does not leak core tools");
 
 // --- .env file loading (BVCC_ENV_FILE) ---
 // A base env WITHOUT the three secrets, so the only source is the env file.
@@ -121,13 +153,14 @@ try {
       `AGENT_PRIVATE_KEY=${env.AGENT_PRIVATE_KEY}  # inline comment, throwaway key`,
       `WALLET_ADDRESS="${env.WALLET_ADDRESS}"`,
       "CHAIN_ID=56",
+      "BVCC_MCP_MODULES=core",
       "",
     ].join("\n"),
   );
 
   const fromFile = await runCase("env-file", { BVCC_ENV_FILE: envFile }, true, { baseEnv: cleanEnv });
   console.log(`\n[${fromFile.label}] ${fromFile.ids.length} tools`);
-  assert(fromFile.ids.length === 16, "starts with config read entirely from BVCC_ENV_FILE");
+  assert(fromFile.ids.length === 20, "starts with config read entirely from BVCC_ENV_FILE");
   assert(fromFile.stderr.includes("chain=56"), "env-file value applied (chain=56 from file)");
 
   // Case: host env WINS over the env file (precedence). File says 56, host says 42161.

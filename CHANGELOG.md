@@ -8,6 +8,34 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.2.0] — 2026-07-21
+
+### Added
+- **Aave v3 lending tools** (Arbitrum): `getAavePositions`, `getAaveMarket`,
+  `aaveSupply`, `aaveWithdraw`, `aaveBorrow`, `aaveRepay`, `aaveRepayWithATokens`,
+  `aaveSetCollateral`, `aaveSetEMode`, plus `dryRunAaveSupply` / `dryRunAaveBorrow`.
+  Deposits/borrows are always for the wallet itself (pinned by the wallet's call
+  policies); `"max"` withdraws/repays the full balance/debt.
+- **Wallet V3 support** via `@bvcc/agent-sdk` 0.2.0. `getCapabilities` no longer
+  reports a swap as possible when the wallet is missing the required call policy, and
+  policy reverts now come back with actionable messages instead of raw selectors.
+- **Aave planners**: `aavePlanClosePosition` / `aaveClosePosition`, `aavePlanDeleverage` /
+  `aaveDeleverage`, `aavePlanCollateralSwap` / `aaveCollateralSwap`, `aavePlanDebtSwap` /
+  `aaveDebtSwap`. The execute half runs a chunked loop and **may send several
+  transactions in one call**; each chunk is re-derived from live state and simulated
+  before it is sent, and aborts on a health-factor floor, price impact, lack of
+  progress or budget.
+- **Native ETH swaps**: `swapToNative` and `swapFromNative` as BVCC's own batches; the 0.15% agent fee applies.
+- **`BVCC_MCP_MODULES`**: expose only the feature groups you want (`core`, `aave`).
+  Combines with `BVCC_MCP_READONLY`. An unknown name yields a smaller surface, never
+  a larger one.
+
+### Notes
+- Bundles `@bvcc/agent-sdk` 0.2.0. Tools are generated from the SDK catalog, so no
+  per-tool code changed here — the Aave tools appear automatically.
+- Aave is Arbitrum-only in this release; the lending tools return a clear error on
+  other chains.
+
 ## [0.1.6] — 2026-06-29
 
 ### Added

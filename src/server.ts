@@ -16,9 +16,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CATALOG,
+  filterByModules,
   type Capability,
   type CapabilityKind,
 } from "@bvcc/agent-sdk/catalog";
+import { GUIDES, getGuide } from "@bvcc/agent-sdk";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { loadConfig } from "./env.js";
@@ -45,6 +47,12 @@ WORKFLOW (do this in order):
    warnings BEFORE swapping. Never swap with amountOutMinimum '0'.
 4. Prefer a dryRun* tool to preview a write (gas + revert reason) before sending.
 5. Then call the write tool (sendNative/sendToken/approve/swapV3/swapV4).
+
+GUIDES (how to use each area):
+- Before your first action in an area you haven't used, call getGuide with
+  'getting-started', 'swaps', 'lending' or 'liquidity'. It returns the recommended
+  sequence and the gotchas for that area (naming the exact tools). listGuides lists
+  them. These stay available even if a feature module is turned off.
 
 KEY FACTS:
 - This server is multi-network. Every tool takes an optional "network" (a chain id
@@ -120,7 +128,12 @@ async function main(): Promise<void> {
     { instructions: INSTRUCTIONS },
   );
 
-  const exposed = config.readOnly ? CATALOG.filter((c) => c.kind !== "write") : CATALOG;
+  // Two independent narrowing levers: `readOnly` drops fund-moving writes,
+  // `modules` drops whole feature groups (e.g. leave Aave out entirely). Neither
+  // is the security boundary — the contract is — but a smaller surface is fewer
+  // ways for a confused agent to act.
+  const byModule = filterByModules(CATALOG, config.modules);
+  const exposed = config.readOnly ? byModule.filter((c) => c.kind !== "write") : byModule;
 
   for (const cap of exposed) {
     server.registerTool(
@@ -156,13 +169,28 @@ async function main(): Promise<void> {
     );
   }
 
+  // Prompts: expose each operating guide as a prompt as well, so a human can pull
+  // one as a slash-command (a secondary surface to the getGuide/listGuides tools).
+  // Same source as the tools, so they never drift apart.
+  for (const g of GUIDES) {
+    server.registerPrompt(
+      `guide-${g.area}`,
+      { title: g.title, description: `${g.whenToUse} (BVCC operating guide)` },
+      () => ({
+        messages: [{ role: "user", content: { type: "text", text: getGuide(g.area) } }],
+      }),
+    );
+  }
+
   // Startup diagnostics go to stderr — stdout is reserved for the MCP protocol.
   const rpcCount = rpcUrlsFor(config.chainId, config).length;
   console.error(
     `[bvcc-agent-mcp v${PKG_VERSION}] wallet=${config.walletAddress} ` +
       `agent=${defaultClient.agentAddress} chain=${config.chainId} (default, multi-network) ` +
       `rpcs=${rpcCount}${rpcCount > 1 ? " (failover)" : ""} ` +
-      `mode=${config.readOnly ? "read-only" : "full"} tools=${exposed.length}`,
+      `mode=${config.readOnly ? "read-only" : "full"} modules=${
+        config.modules.length ? config.modules.join("+") : "all"
+      } tools=${exposed.length}`,
   );
 
   const transport = new StdioServerTransport();

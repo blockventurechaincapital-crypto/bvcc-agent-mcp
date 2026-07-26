@@ -13,7 +13,12 @@
 **Model Context Protocol server for a BVCC Agent Wallet.** It lets MCP-speaking
 AI runtimes — Claude Code, Cursor, the Claude desktop app — operate a BVCC Agent
 Wallet on-chain: check balances and limits, plan and simulate swaps, send tokens,
-and swap on Uniswap v3/v4.
+swap on Uniswap v3/v4 (including to and from native ETH), **provide liquidity on
+Uniswap v3/v4** (including native-ETH pools), and **lend, borrow and unwind
+positions on Aave v3** — including closing or deleveraging a position in safe
+steps on its own. It also ships built-in **operating guides** (`listGuides` /
+`getGuide`, also exposed as prompts) so an agent can learn how to use each area on
+demand.
 
 Every tool is generated from the [`@bvcc/agent-sdk`](https://www.npmjs.com/package/@bvcc/agent-sdk) capability
 catalog. There is no per-tool code here: add a capability to the SDK catalog and
@@ -40,11 +45,63 @@ dashboard.
 
 Generated from the catalog and tagged by class:
 
+**Core** (wallet, transfers, swaps):
+
 | Class | Tools |
 |-------|-------|
 | 🟢 read | `getAgentStatus`, `getCapabilities`, `getNativeBalance`, `getTokenBalances`, `getRemaining`, `needsApproval` |
 | 🟡 simulate | `buildSwapPlan`, `dryRunSendNative`, `dryRunSendToken`, `dryRunSwapV3`, `dryRunSwapV4` |
-| 🔴 write | `sendNative`, `sendToken`, `approve`, `swapV3`, `swapV4` |
+| 🔴 write | `sendNative`, `sendToken`, `approve`, `swapV3`, `swapV4`, `swapToNative`, `swapFromNative` |
+
+A 0.15% BVCC agent fee is charged automatically on-chain on agent actions, separate
+from gas and from your spend budget.
+
+**Aave v3 lending** (`aave` module — Arbitrum, Ethereum, BNB, Base, Polygon):
+
+| Class | Tools |
+|-------|-------|
+| 🟢 read | `getAavePositions`, `getAaveMarket` |
+| 🟡 simulate | `dryRunAaveSupply`, `dryRunAaveBorrow`, `aavePlanClosePosition`, `aavePlanDeleverage`, `aavePlanCollateralSwap`, `aavePlanDebtSwap` |
+| 🔴 write | `aaveSupply`, `aaveWithdraw`, `aaveBorrow`, `aaveRepay`, `aaveRepayWithATokens`, `aaveSetCollateral`, `aaveSetEMode`, `aaveClosePosition`, `aaveDeleverage`, `aaveCollateralSwap`, `aaveDebtSwap` |
+
+Deposits and borrows are always **for the wallet itself** — no `to` or `onBehalfOf`
+parameter exists, because the wallet's on-chain call policies pin the beneficiary.
+
+⚠️ **The four `aave*` unwinding tools can send several transactions in one call.**
+`aaveClosePosition`, `aaveDeleverage`, `aaveCollateralSwap` and `aaveDebtSwap` run a
+chunked loop, re-deriving and re-simulating each step from live state. Call the
+matching `aavePlan*` tool first to see what it intends to do. They stop rather than
+proceed if the health factor would fall below `hfFloor` (default 1.05), if a swap
+prices too far from the Aave oracle, if the loop stops making progress, or if the
+agent's budget would run out.
+
+**Uniswap liquidity** (`lp` module — open, collect, close positions on v3 & v4):
+
+| Class | Tools |
+|-------|-------|
+| 🟢 read | `getV3Position`, `getV4Position` |
+| 🟡 simulate | `dryRunAddLiquidityV3`, `dryRunRemoveLiquidityV3`, `dryRunAddLiquidityV4`, `dryRunRemoveLiquidityV4` |
+| 🔴 write | `addLiquidityV3`, `removeLiquidityV3`, `collectFeesV3`, `burnV3`, `addLiquidityV4`, `removeLiquidityV4`, `collectFeesV4`, `burnV4` |
+
+The position NFT is minted **to the wallet** and every proceed returns to it —
+pinned on-chain. `addLiquidityV3` sizes both sides to the pool's current price
+(full-range by default, or pass ticks). v4 covers **native-ETH pools**; its tools
+need the v4 PositionManager's DEEP validator active on-chain for the agent, else
+the action fails closed. Note there is no `increaseLiquidity` on v3 (not
+owner-gated on the NFPM — add by minting a fresh position).
+
+**Guides** (`meta` module — always exposed, help):
+
+| Class | Tools |
+|-------|-------|
+| 🟢 read | `listGuides`, `getGuide` |
+
+`listGuides` names the how-to guides; `getGuide({ area })` returns the playbook for
+one area — the recommended workflow and the gotchas, naming the exact tools —
+covering `getting-started`, `swaps`, `lending` and `liquidity`. They stay available
+even under a module filter, so an agent restricted to one feature can still learn
+how to use it. The same guides are also exposed as **prompts** (`guide-<area>`) so a
+human can pull one as a slash-command.
 
 Writes carry the MCP `destructiveHint` annotation so clients can require
 confirmation. See [GUIDE.md](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/GUIDE.md) for the recommended operating workflow.
@@ -70,11 +127,33 @@ CHAIN_ID=42161
 |----------|----------|-------------|
 | `AGENT_PRIVATE_KEY` | yes | Agent EOA private key (`0x` + 64 hex). Used locally only. |
 | `WALLET_ADDRESS` | yes | The BVCC Agent Wallet this agent operates. |
-| `CHAIN_ID` | yes | **Default** chain: `42161` Arbitrum One · `56` BNB · `1` Ethereum · `8453` Base · `421614` Arbitrum Sepolia. |
+| `CHAIN_ID` | yes | **Default** chain: `42161` Arbitrum One · `56` BNB · `1` Ethereum · `8453` Base · `137` Polygon · `421614` Arbitrum Sepolia. |
 | `RPC_URL` | no | Custom RPC for the default chain (otherwise a public default). |
 | `RPC_URL_<chainId>` | no | Per-chain RPC override, e.g. `RPC_URL_56`. |
 | `BVCC_ENV_FILE` | no | Path to a dedicated env file to load (keeps the key out of the host config). Host env wins over it. |
 | `BVCC_MCP_READONLY` | no | `true` exposes only read/simulate tools. |
+| `BVCC_MCP_MODULES` | no | Comma-separated feature groups to expose: `core`, `aave`, `lp`. Unset = all. |
+
+**Narrowing what the agent can reach.** `BVCC_MCP_READONLY` and `BVCC_MCP_MODULES`
+are independent and combine. If an agent will never touch lending, leaving those
+tools out is one less thing it can get wrong:
+
+```bash
+BVCC_MCP_MODULES=core              # wallet + swaps    (18 + 2 guides = 20)
+BVCC_MCP_MODULES=aave              # Aave lending      (19 + 2 = 21)
+BVCC_MCP_MODULES=lp                # Uniswap liquidity (14 + 2 = 16)
+BVCC_MCP_MODULES=core,aave,lp      # everything (= unset)  (51 + 2 = 53)
+BVCC_MCP_MODULES=core
+BVCC_MCP_READONLY=true             # read-only wallet  (11 + 2 = 13)
+```
+
+The two guide tools (`listGuides`, `getGuide`, module `meta`) are always exposed on
+top of these — that is the `+ 2` — so an agent restricted to one feature can still
+read how to use it.
+
+An unrecognised module name is ignored, so a typo yields a *smaller* surface, never
+a larger one. Neither switch is the security boundary — the contract is — but a
+smaller surface is fewer ways for a confused agent to act.
 
 **Multi-network:** one server operates the agent on any supported chain. Every
 tool takes an optional `network` (chain id or name: `ethereum`, `bsc`, `arbitrum`,
@@ -117,17 +196,17 @@ claude mcp add bvcc-agent-wallet \
 The key lives in `agent.env`, not in the config above. If you'd rather inline it,
 replace the `env` block with `AGENT_PRIVATE_KEY` / `WALLET_ADDRESS` / `CHAIN_ID`
 directly (less safe — the key sits in the host config). Pin a version for
-reproducibility, e.g. `@bvcc/agent-mcp@0.1.4` (see [Upgrading](#upgrading)).
+reproducibility, e.g. `@bvcc/agent-mcp@0.2.0` (see [Upgrading](#upgrading)).
 
 ## Upgrading
 
 The SDK is bundled into this package, so **updating the MCP is all you need** to get
-new capabilities (e.g. a future Aave release) — you never install or update
+new capabilities (Aave lending shipped this way in 0.2.0) — you never install or update
 `@bvcc/agent-sdk` separately.
 
 1. **Pin the version** in your config for reproducibility:
    ```json
-   "args": ["-y", "@bvcc/agent-mcp@0.1.4"]
+   "args": ["-y", "@bvcc/agent-mcp@0.2.0"]
    ```
    `npx` caches, so an unpinned `@bvcc/agent-mcp` can keep running an old build.
    To upgrade, bump the number (e.g. `@0.2.0`) — or use `@latest` if you prefer.

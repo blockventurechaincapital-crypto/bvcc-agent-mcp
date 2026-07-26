@@ -13,6 +13,8 @@ export interface ServerConfig {
   rpcUrl?: string;
   /** When true, only `read` and `simulate` tools are exposed (no writes). */
   readOnly: boolean;
+  /** Capability modules to expose. Empty = all. From BVCC_MCP_MODULES. */
+  modules: string[];
 }
 
 function truthy(v: string | undefined): boolean {
@@ -64,5 +66,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     chainId,
     rpcUrl: env.RPC_URL?.trim() || undefined,
     readOnly: truthy(env.BVCC_MCP_READONLY),
+    modules: (env.BVCC_MCP_MODULES ?? "")
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean),
   };
 }
