@@ -196,7 +196,7 @@ claude mcp add bvcc-agent-wallet \
 The key lives in `agent.env`, not in the config above. If you'd rather inline it,
 replace the `env` block with `AGENT_PRIVATE_KEY` / `WALLET_ADDRESS` / `CHAIN_ID`
 directly (less safe — the key sits in the host config). Pin a version for
-reproducibility, e.g. `@bvcc/agent-mcp@0.2.0` (see [Upgrading](#upgrading)).
+reproducibility, e.g. `@bvcc/agent-mcp@0.2.1` (see [Upgrading](#upgrading)).
 
 ## Upgrading
 
@@ -206,10 +206,10 @@ new capabilities (Aave lending shipped this way in 0.2.0) — you never install 
 
 1. **Pin the version** in your config for reproducibility:
    ```json
-   "args": ["-y", "@bvcc/agent-mcp@0.2.0"]
+   "args": ["-y", "@bvcc/agent-mcp@0.2.1"]
    ```
    `npx` caches, so an unpinned `@bvcc/agent-mcp` can keep running an old build.
-   To upgrade, bump the number (e.g. `@0.2.0`) — or use `@latest` if you prefer.
+   To upgrade, bump the number (e.g. `@0.2.1`) — or use `@latest` if you prefer.
    Global installs: `npm i -g @bvcc/agent-mcp@latest`.
 2. **Restart your MCP client.** New tools from the catalog appear automatically;
    nothing else in the config changes. The startup banner prints the running

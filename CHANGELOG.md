@@ -8,6 +8,17 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.2.1] — 2026-07-28
+
+### Changed
+- Bundles `@bvcc/agent-sdk` 0.2.1, which brings wallet V4 support: `getCapabilities`
+  reports `walletVersion: "v4"`, the call-policy checks apply to V4 wallets, and the three
+  V4 reverts come back as actionable messages instead of raw selectors — in particular
+  `AgentMustBeEOA`, which an agent hits permanently if its address acquires an EIP-7702
+  delegation.
+- No tool signatures changed. Nothing to reconfigure: the MCP targets a wallet address,
+  not a factory.
+
 ## [0.2.0] — 2026-07-21
 
 ### Added
