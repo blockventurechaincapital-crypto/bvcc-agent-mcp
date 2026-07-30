@@ -1,7 +1,14 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "tsup";
+
+// Single source of truth for the version the server reports over MCP. It used to be
+// a literal in server.ts and drifted two releases behind package.json before anyone
+// noticed — the handshake announced 0.1.6 while npm served 0.2.1.
+const { version } = JSON.parse(readFileSync("./package.json", "utf8")) as { version: string };
 
 export default defineConfig({
   entry: ["src/server.ts"],
+  define: { __PKG_VERSION__: JSON.stringify(version) },
   format: ["esm"],
   target: "es2022",
   clean: true,

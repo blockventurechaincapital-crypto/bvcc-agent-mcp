@@ -8,6 +8,25 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.2.2] — 2026-07-30
+
+### Fixed
+- **The server reported the wrong version.** `serverInfo.version` in the MCP handshake —
+  what your client shows and what the startup banner prints — was a literal in
+  `server.ts` last updated for 0.1.6, so 0.2.0 and 0.2.1 both announced themselves as
+  `0.1.6`. Nothing behaved differently, but anyone checking their version saw a stale one
+  and had reason to think `npx` was serving an old build. The version is now injected at
+  build time from `package.json` and cannot drift again.
+- **The MCP registry entry pinned 0.2.0.** `server.json` named 0.2.0 as the npm version to
+  install, so anyone arriving through the registry got a build with no wallet V4 support —
+  no `walletVersion: "v4"` from `getCapabilities`, no V4 call-policy checks, and raw
+  selectors instead of an actionable `AgentMustBeEOA`. Installing with
+  `npx -y @bvcc/agent-mcp` was never affected; it resolves to `latest`.
+
+No tool signatures changed and no behaviour changed. Bundles `@bvcc/agent-sdk` 0.2.2,
+which is itself a maintenance release identical in behaviour to 0.2.1 — the version
+numbers are aligned so that the SDK inside a given MCP build is obvious.
+
 ## [0.2.1] — 2026-07-28
 
 ### Changed

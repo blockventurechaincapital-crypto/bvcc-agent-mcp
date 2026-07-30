@@ -29,7 +29,12 @@ import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS } f
 import { stringify, toJsonSafe } from "./json.js";
 import { redactSecrets } from "./redact.js";
 
-const PKG_VERSION = "0.1.6";
+/** Injected at build time by tsup from package.json (see tsup.config.ts). */
+declare const __PKG_VERSION__: string;
+
+// `npm run dev` runs this through tsx without a tsup build, so the define is absent
+// there. Only the published bundle carries a real version.
+const PKG_VERSION = typeof __PKG_VERSION__ !== "undefined" ? __PKG_VERSION__ : "dev";
 
 const INSTRUCTIONS = `This server operates a BVCC Agent Wallet on-chain.
 
