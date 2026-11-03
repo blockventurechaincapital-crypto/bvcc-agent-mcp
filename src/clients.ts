@@ -2,6 +2,10 @@ import { fallback, http } from "viem";
 import { BvccAgentClient, NETWORKS } from "@bvcc/agent-sdk";
 import type { ServerConfig } from "./env.js";
 
+declare const __PKG_VERSION__: string | undefined;
+/** This server's version, injected at build time (tsup define). */
+const MCP_VERSION = typeof __PKG_VERSION__ === "string" ? __PKG_VERSION__ : "0.0.0-dev";
+
 /**
  * Multi-network routing for one MCP server.
  *
@@ -133,6 +137,8 @@ export function createClientFactory(
         walletAddress: config.walletAddress,
         network: chainId,
         transport,
+        // Tag this server's transactions as MCP (tool + version only, nothing about the user).
+        sourceTag: { tool: "mcp", version: MCP_VERSION },
       });
       cache.set(chainId, client);
     }

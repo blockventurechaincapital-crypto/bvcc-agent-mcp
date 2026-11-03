@@ -106,6 +106,43 @@ human can pull one as a slash-command.
 Writes carry the MCP `destructiveHint` annotation so clients can require
 confirmation. See [GUIDE.md](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/GUIDE.md) for the recommended operating workflow.
 
+## Wallet V5
+
+The server works with every wallet generation and detects which one it is talking to.
+On a **V5** wallet a few things change, and the tools already apply them:
+
+- **Limits:** `0` allows nothing (before V5 it meant unlimited) and an empty recipient
+  list allows no recipient. Limits count the 0.15% agent fee too, so stay a little under
+  them; `getRemaining` shows the real headroom.
+- **Swaps** run through the Universal Router, between ERC-20 tokens. `swapV3` keeps
+  working: on V5 it is sent through the Universal Router for you.
+- **Permit2** allowances for swaps and v4 liquidity are granted by the wallet owner when
+  authorizing or renewing the agent, not by the agent.
+- **Native coin and Uniswap v3 liquidity** (wrap / unwrap, `swapToNative`,
+  `swapFromNative`, the v3 LP tools) work where their validators are active on that
+  network; `getCapabilities` says so. Elsewhere use WETH and v4 liquidity.
+- **Aave:** everything except `aaveRepayWithATokens`.
+- The owner can **pause** one agent, **block** a contract for every agent and **renew**
+  the expiry. `getAgentStatus` and `getCapabilities` report all of it.
+
+Anything V5 does not allow comes back as a failed result with a plain explanation,
+before any gas is spent.
+
+## Good to know
+
+- **Retry or not.** Every failed result carries `retryable`. When it is `false` the same
+  call will fail again (a budget is used up, a permission is missing, the balance is
+  short): change the input or ask the owner instead of repeating it.
+- **Liquidity ranges as prices.** The LP tools take `priceLower` / `priceUpper` instead
+  of raw ticks. A range that does not contain the current price needs a confirmation:
+  the first call stops and asks, and `allowOutOfRange: true` opens it.
+- **Gas margin.** Transactions are sent with 20% more gas than the estimate; unused gas
+  is not paid.
+- **Source tag.** Each transaction ends with 8 bytes naming the tool that built it (the
+  BVCC MCP) and its version, so BVCC can tell which releases are in use and tie failures
+  to a version. It carries nothing about you, your wallet or your agent, and the wallet
+  ignores it.
+
 ## Configuration
 
 **Recommended:** keep the values — above all `AGENT_PRIVATE_KEY` — in a dedicated
@@ -196,7 +233,7 @@ claude mcp add bvcc-agent-wallet \
 The key lives in `agent.env`, not in the config above. If you'd rather inline it,
 replace the `env` block with `AGENT_PRIVATE_KEY` / `WALLET_ADDRESS` / `CHAIN_ID`
 directly (less safe — the key sits in the host config). Pin a version for
-reproducibility, e.g. `@bvcc/agent-mcp@0.2.1` (see [Upgrading](#upgrading)).
+reproducibility, e.g. `@bvcc/agent-mcp@0.3.0` (see [Upgrading](#upgrading)).
 
 ## Upgrading
 
@@ -206,10 +243,10 @@ new capabilities (Aave lending shipped this way in 0.2.0) — you never install 
 
 1. **Pin the version** in your config for reproducibility:
    ```json
-   "args": ["-y", "@bvcc/agent-mcp@0.2.1"]
+   "args": ["-y", "@bvcc/agent-mcp@0.3.0"]
    ```
    `npx` caches, so an unpinned `@bvcc/agent-mcp` can keep running an old build.
-   To upgrade, bump the number (e.g. `@0.2.1`) — or use `@latest` if you prefer.
+   To upgrade, bump the number (e.g. `@0.3.0`) — or use `@latest` if you prefer.
    Global installs: `npm i -g @bvcc/agent-mcp@latest`.
 2. **Restart your MCP client.** New tools from the catalog appear automatically;
    nothing else in the config changes. The startup banner prints the running

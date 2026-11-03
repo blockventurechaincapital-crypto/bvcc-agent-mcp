@@ -8,6 +8,38 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.3.0] — 2026-11-03
+
+Bundles `@bvcc/agent-sdk` 0.3.0: **wallet V5 support**. Wallets of earlier generations
+behave as before; the server finds out which generation each wallet is by itself.
+
+### Added
+- **Wallet V5.** Status, capabilities and remaining-budget tools read V5 permissions with
+  their meaning: a limit of 0 allows nothing (shown as "not allowed", no longer as
+  "unlimited"), an empty recipient list allows no recipient, and the agent can be paused
+  on its own. Capabilities check this agent's call policies, the active validators, the
+  contracts the owner blocked and the owner's Permit2 allowances.
+- On V5, swap and liquidity tools leave out the Permit2 steps (the owner grants them),
+  `swapV3` runs through the Universal Router, and the tools V5 does not allow
+  (`swapToNative`, `swapFromNative`, Uniswap v3 liquidity, `aaveRepayWithATokens`)
+  return a plain explanation before any gas is spent. Their descriptions say so.
+- Router deadlines follow the chain's clock: a swap no longer fails with
+  `TransactionDeadlinePassed` when the computer's clock is behind.
+- Readable messages for the new V5, Permit2 and Uniswap router errors.
+- The server instructions describe the V5 rules.
+- On V5, Uniswap v3 liquidity and native-coin swaps work where their validators are active
+  (`getCapabilities` → `canProvideLiquidityV3`, `canWrapNative`); elsewhere they explain that
+  they are not active yet on that network.
+- Transactions are sent with a 20% gas margin over the estimate (no more out-of-gas on
+  valid LP operations).
+- Failures carry `retryable`; the instructions tell the agent not to repeat a call that
+  returned `retryable: false`. Uniswap `STF` and Aave error codes are explained.
+- Liquidity tools take `priceLower` / `priceUpper` and ask for confirmation before
+  opening a range outside the current price (`allowOutOfRange: true` opens it).
+- Whole-balance sends on V5 are refused before any gas, with the most that can be moved.
+- Transactions end with an 8-byte tag naming the tool (MCP) and its version — nothing
+  about the user or the wallet.
+
 ## [0.2.2] — 2026-07-30
 
 ### Fixed

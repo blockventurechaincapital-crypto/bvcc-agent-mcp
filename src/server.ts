@@ -67,7 +67,23 @@ KEY FACTS:
 - Amounts are human decimal strings ("0.1"); tokens are symbols ("USDC") or 0x addresses.
 - The contract enforces every limit. A blocked action reverts on-chain — read the
   returned humanMessage/suggestedAction and adjust; do not retry blindly.
-- write tools move funds (annotated destructive). read/simulate tools do not.`;
+- write tools move funds (annotated destructive). read/simulate tools do not.
+- A failed result carries "retryable". If it is false, do NOT repeat the call with the
+  same parameters: change the amount, check balances (getTokenBalances), or ask the owner.
+- To move a whole balance on wallet V5, leave room for the agent fee: send at most what
+  a failed send reports as the most that can be moved.
+- Liquidity ranges: give priceLower/priceUpper (tokenA per tokenB), not raw ticks. A range
+  that does not contain the current price is not opened on the first call: ask the user
+  "this position would be outside the current price — open it anyway?". If they confirm,
+  call again with allowOutOfRange: true and it is opened.
+- Transactions sent by this server end with an 8-byte tag naming the tool (MCP) and its
+  version — nothing about the user or the wallet.
+- Wallet V5 (getCapabilities reports walletVersion): a limit of 0 allows nothing and an
+  empty recipient list allows no recipient; stay a little under each limit. Swaps go
+  through the Universal Router between ERC-20 tokens; native-coin swaps and Uniswap v3
+  liquidity only where getCapabilities reports canWrapNative / canProvideLiquidityV3; no
+  Aave repayWithATokens. Permit2 allowances are the owner's.
+  Tools V5 does not allow return a plain "not available on wallet V5" before any gas.`;
 
 /** Map a catalog kind to MCP tool annotations so clients can render/gate by class. */
 function annotationsFor(cap: Capability<never>): ToolAnnotations {

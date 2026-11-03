@@ -31,9 +31,12 @@ set its limits:
 
 - **allowedTokens** — which ERC-20s it may touch.
 - **allowedProtocols** — for swaps, the router **and** Permit2 (v4/Universal Router
-  need both).
+  need both). On a **V5** wallet the dashboard also grants the Permit2 allowances for
+  you when you authorize or renew the agent.
 - **allowedRecipients** — optional whitelist of where funds may go.
-- **spend caps** — per-tx, daily, period and total (native + per-token).
+- **spend caps** — per-tx, daily, period and total (native + per-token). On a **V5**
+  wallet a cap of `0` allows nothing (before V5 it meant unlimited), and the caps count
+  the 0.15% agent fee.
 - **expiry** — optional auto-expiry.
 
 Without this the contract reverts with `NotAuthorizedAgent`. Keep limits **tight** —
@@ -58,7 +61,7 @@ cloud-synced folder.
 |----------|:---:|------------|
 | `AGENT_PRIVATE_KEY` | ✅ | The agent EOA private key from step 2 (`0x` + 64 hex). |
 | `WALLET_ADDRESS` | ✅ | The Agent Wallet from step 1. |
-| `CHAIN_ID` | ✅ | Default chain: `1` Ethereum · `56` BNB · `42161` Arbitrum One · `8453` Base · `421614` Arbitrum Sepolia. |
+| `CHAIN_ID` | ✅ | Default chain: `1` Ethereum · `56` BNB · `42161` Arbitrum One · `8453` Base · `137` Polygon · `421614` Arbitrum Sepolia. |
 | `RPC_URL` / `RPC_URL_<chainId>` | ❌ | Your own RPC(s). Comma-separate several for failover. Else public defaults are used. |
 | `BVCC_MCP_READONLY` | ❌ | `true` exposes only read/simulate tools (never moves funds). |
 

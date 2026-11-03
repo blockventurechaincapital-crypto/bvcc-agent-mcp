@@ -74,6 +74,9 @@ id like `42161`, or a name: `ethereum`, `bsc`, `arbitrum`, `base`,
   **both** the Universal Router and Permit2 in `allowedProtocols`. v4 pools are
   identified by `fee` + `tickSpacing` (e.g. the Arbitrum USDC/WETH 0.05% pool is
   `fee: 500, tickSpacing: 10`).
+- **Wallet V5:** both go through the Universal Router, and the owner grants the
+  Permit2 allowances, so the agent never approves Permit2 itself. See the README's
+  "Wallet V5" section.
 - A wrong router address reverts rather than losing funds (no transfer-to-router).
 
 ## Where to keep the agent key
