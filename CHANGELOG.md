@@ -20,9 +20,9 @@ behave as before; the server finds out which generation each wallet is by itself
   on its own. Capabilities check this agent's call policies, the active validators, the
   contracts the owner blocked and the owner's Permit2 allowances.
 - On V5, swap and liquidity tools leave out the Permit2 steps (the owner grants them),
-  `swapV3` runs through the Universal Router, and the tools V5 does not allow
-  (`swapToNative`, `swapFromNative`, Uniswap v3 liquidity, `aaveRepayWithATokens`)
-  return a plain explanation before any gas is spent. Their descriptions say so.
+  `swapV3` runs through the Universal Router, and `aaveRepayWithATokens`, which V5 does
+  not allow, returns a plain explanation before any gas is spent. Native-coin swaps and
+  Uniswap v3 liquidity depend on their validators (see below). The descriptions say so.
 - Router deadlines follow the chain's clock: a swap no longer fails with
   `TransactionDeadlinePassed` when the computer's clock is behind.
 - Readable messages for the new V5, Permit2 and Uniswap router errors.
