@@ -8,6 +8,19 @@ The SDK is bundled into this package, so updating the MCP is all a tool user nee
 to get new capabilities (e.g. a future Aave release) — see **Upgrading** in the
 README.
 
+## [0.3.1] — 2026-11-04
+
+Bundles `@bvcc/agent-sdk` 0.3.1.
+
+### Added
+- **Update check.** When the server starts, it asks the public npm registry for the
+  latest `@bvcc/agent-mcp`. It is one GET in the background, capped at 2 seconds, and
+  startup does not wait for it. If a newer version is out, the log says
+  `update available` and `getAgentStatus` returns `updateAvailable: { current, latest,
+  command, changelogUrl }`. The server instructions ask the agent to tell the user once.
+  The request carries nothing about the user, the wallet or the agent. Turn it off with
+  `BVCC_NO_UPDATE_CHECK=1`.
+
 ## [0.3.0] — 2026-11-03
 
 Bundles `@bvcc/agent-sdk` 0.3.0: **wallet V5 support**. Wallets of earlier generations

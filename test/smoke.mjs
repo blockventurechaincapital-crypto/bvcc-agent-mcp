@@ -16,6 +16,8 @@ const env = {
   AGENT_PRIVATE_KEY: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
   WALLET_ADDRESS: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", // placeholder — smoke does tools/list only, no chain calls
   CHAIN_ID: "42161",
+  // The smoke run must not reach the npm registry.
+  BVCC_NO_UPDATE_CHECK: "1",
 };
 
 function runCase(label, extraEnv, expectWrites, opts = {}) {
@@ -52,8 +54,9 @@ function runCase(label, extraEnv, expectWrites, opts = {}) {
       const writes = tools.filter((t) => t.annotations?.destructiveHint).map((t) => t.name);
       const allHaveNetwork = tools.every((t) => t.inputSchema?.properties?.network);
       const prompts = (responses.get(3)?.result?.prompts ?? []).map((p) => p.name).sort();
+      const instructions = responses.get(1)?.result?.instructions ?? "";
       child.kill();
-      resolveCase({ label, ids, writes, prompts, expectWrites, allHaveNetwork, stderr: stderr.join("") });
+      resolveCase({ label, ids, writes, prompts, instructions, expectWrites, allHaveNetwork, stderr: stderr.join("") });
     }
 
     // Handshake
@@ -115,6 +118,8 @@ assert(JSON.stringify(core.ids) === JSON.stringify(EXPECTED_CORE), "core tool id
 assert(core.writes.length === 7, "7 core tools flagged destructive (writes)");
 assert(core.allHaveNetwork, "every tool exposes an optional `network` selector");
 assert(core.stderr.includes("multi-network"), "startup banner reports multi-network");
+assert(core.instructions.includes("updateAvailable"), "instructions tell the agent to report updateAvailable once");
+assert(!core.stderr.includes("update available"), "BVCC_NO_UPDATE_CHECK=1 keeps the update check off");
 assert(
   JSON.stringify(core.prompts) ===
     JSON.stringify(["guide-getting-started", "guide-lending", "guide-liquidity", "guide-swaps"]),
@@ -141,6 +146,7 @@ const cleanEnv = { ...process.env };
 delete cleanEnv.AGENT_PRIVATE_KEY;
 delete cleanEnv.WALLET_ADDRESS;
 delete cleanEnv.CHAIN_ID;
+cleanEnv.BVCC_NO_UPDATE_CHECK = "1";
 
 const tmp = mkdtempSync(resolve(tmpdir(), "bvcc-mcp-smoke-"));
 try {

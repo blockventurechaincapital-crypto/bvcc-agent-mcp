@@ -20,12 +20,12 @@ import {
   type Capability,
   type CapabilityKind,
 } from "@bvcc/agent-sdk/catalog";
-import { GUIDES, getGuide } from "@bvcc/agent-sdk";
+import { GUIDES, getGuide, checkForUpdate } from "@bvcc/agent-sdk";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { loadConfig } from "./env.js";
 import { loadEnvFile } from "./loadEnv.js";
-import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS } from "./clients.js";
+import { createClientFactory, resolveChainId, rpcUrlsFor, SUPPORTED_NETWORKS, MCP_UPDATE_TARGET } from "./clients.js";
 import { stringify, toJsonSafe } from "./json.js";
 import { redactSecrets } from "./redact.js";
 
@@ -78,6 +78,8 @@ KEY FACTS:
   call again with allowOutOfRange: true and it is opened.
 - Transactions sent by this server end with an 8-byte tag naming the tool (MCP) and its
   version — nothing about the user or the wallet.
+- If getAgentStatus returns "updateAvailable", tell the user once that a newer version of
+  this server is out (current → latest), with its command and changelogUrl. Do not repeat it.
 - Wallet V5 (getCapabilities reports walletVersion): a limit of 0 allows nothing and an
   empty recipient list allows no recipient; stay a little under each limit. Swaps go
   through the Universal Router between ERC-20 tokens; native-coin swaps and Uniswap v3
@@ -216,6 +218,13 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // Update check, in the background after the server is up: one GET to the public npm
+  // registry (max 2 s, nothing about the user). Off with BVCC_NO_UPDATE_CHECK=1. The
+  // answer is cached, so getAgentStatus reuses it.
+  void checkForUpdate(MCP_UPDATE_TARGET).then((u) => {
+    if (u) console.error(`[bvcc-agent-mcp] update available ${u.current} → ${u.latest}: ${u.command} (${u.changelogUrl})`);
+  });
 }
 
 main().catch((err) => {

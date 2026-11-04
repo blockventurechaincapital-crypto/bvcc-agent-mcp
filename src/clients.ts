@@ -1,10 +1,21 @@
 import { fallback, http } from "viem";
-import { BvccAgentClient, NETWORKS } from "@bvcc/agent-sdk";
+import { BvccAgentClient, NETWORKS, type UpdateCheckTarget } from "@bvcc/agent-sdk";
 import type { ServerConfig } from "./env.js";
 
 declare const __PKG_VERSION__: string | undefined;
 /** This server's version, injected at build time (tsup define). */
 const MCP_VERSION = typeof __PKG_VERSION__ === "string" ? __PKG_VERSION__ : "0.0.0-dev";
+
+/**
+ * Update check for this server: the npm package is the MCP's, not the bundled SDK's.
+ * Asked once at startup (server.ts) and reused by getAgentStatus on every chain.
+ */
+export const MCP_UPDATE_TARGET: UpdateCheckTarget = {
+  package: "@bvcc/agent-mcp",
+  current: MCP_VERSION,
+  command: "npx -y @bvcc/agent-mcp@latest",
+  releasesUrl: "https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/releases/tag/v",
+};
 
 /**
  * Multi-network routing for one MCP server.
@@ -139,6 +150,7 @@ export function createClientFactory(
         transport,
         // Tag this server's transactions as MCP (tool + version only, nothing about the user).
         sourceTag: { tool: "mcp", version: MCP_VERSION },
+        updateCheck: MCP_UPDATE_TARGET,
       });
       cache.set(chainId, client);
     }

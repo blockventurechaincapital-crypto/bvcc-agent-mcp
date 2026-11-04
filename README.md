@@ -170,6 +170,7 @@ CHAIN_ID=42161
 | `BVCC_ENV_FILE` | no | Path to a dedicated env file to load (keeps the key out of the host config). Host env wins over it. |
 | `BVCC_MCP_READONLY` | no | `true` exposes only read/simulate tools. |
 | `BVCC_MCP_MODULES` | no | Comma-separated feature groups to expose: `core`, `aave`, `lp`. Unset = all. |
+| `BVCC_NO_UPDATE_CHECK` | no | `1` turns off the new-version check (see [Upgrading](#upgrading)). |
 
 **Narrowing what the agent can reach.** `BVCC_MCP_READONLY` and `BVCC_MCP_MODULES`
 are independent and combine. If an agent will never touch lending, leaving those
@@ -213,7 +214,7 @@ npm test          # builds + stdio smoke test (no chain calls)
 ```bash
 claude mcp add bvcc-agent-wallet \
   --env BVCC_ENV_FILE=/secure/agent.env \
-  -- npx -y @bvcc/agent-mcp
+  -- npx -y @bvcc/agent-mcp@latest
 ```
 
 ### Cursor / Claude app (`mcp.json`)
@@ -223,7 +224,7 @@ claude mcp add bvcc-agent-wallet \
   "mcpServers": {
     "bvcc-agent-wallet": {
       "command": "npx",
-      "args": ["-y", "@bvcc/agent-mcp"],
+      "args": ["-y", "@bvcc/agent-mcp@latest"],
       "env": { "BVCC_ENV_FILE": "/secure/agent.env" }
     }
   }
@@ -232,8 +233,8 @@ claude mcp add bvcc-agent-wallet \
 
 The key lives in `agent.env`, not in the config above. If you'd rather inline it,
 replace the `env` block with `AGENT_PRIVATE_KEY` / `WALLET_ADDRESS` / `CHAIN_ID`
-directly (less safe — the key sits in the host config). Pin a version for
-reproducibility, e.g. `@bvcc/agent-mcp@0.3.0` (see [Upgrading](#upgrading)).
+directly (less safe — the key sits in the host config). `@latest` keeps you on the
+newest release; to stay on one version instead, see [Upgrading](#upgrading).
 
 ## Upgrading
 
@@ -241,12 +242,13 @@ The SDK is bundled into this package, so **updating the MCP is all you need** to
 new capabilities (Aave lending shipped this way in 0.2.0) — you never install or update
 `@bvcc/agent-sdk` separately.
 
-1. **Pin the version** in your config for reproducibility:
+1. **Use `@latest`** (recommended), as in the examples above. `npx` caches, so a
+   plain `@bvcc/agent-mcp` with no tag can keep running an old build; `@latest` checks
+   for a newer one each time the client starts the server.
+   To stay on one version instead, pin it and bump the number yourself when you upgrade:
    ```json
-   "args": ["-y", "@bvcc/agent-mcp@0.3.0"]
+   "args": ["-y", "@bvcc/agent-mcp@0.3.1"]
    ```
-   `npx` caches, so an unpinned `@bvcc/agent-mcp` can keep running an old build.
-   To upgrade, bump the number (e.g. `@0.3.0`) — or use `@latest` if you prefer.
    Global installs: `npm i -g @bvcc/agent-mcp@latest`.
 2. **Restart your MCP client.** New tools from the catalog appear automatically;
    nothing else in the config changes. The startup banner prints the running
@@ -255,6 +257,15 @@ new capabilities (Aave lending shipped this way in 0.2.0) — you never install 
    (e.g. Aave) exposes its tools immediately, but the agent must have that
    protocol's contract in its `allowedProtocols` — otherwise the action reverts
    with `ProtocolNotAllowed`. Authorize it from the dashboard, same as a router.
+
+**Knowing when there is a new version.** When the server starts, it asks the public npm
+registry which version of `@bvcc/agent-mcp` is the latest. This runs in the background
+and gives up after 2 seconds, so startup never waits on it or fails because of it. If a
+newer version is out, the log prints `[bvcc-agent-mcp] update available 0.3.1 → 0.3.2 …`
+and `getAgentStatus` returns `updateAvailable: { current, latest, command, changelogUrl }`,
+which the agent passes on to you once. The request carries nothing about you, your wallet
+or your agent, though npm does see your IP address, the same as with any `npm install`.
+To turn it off, set `BVCC_NO_UPDATE_CHECK=1`.
 
 See [CHANGELOG.md](https://github.com/blockventurechaincapital-crypto/bvcc-agent-mcp/blob/main/CHANGELOG.md) for what each version changes. Versioning follows
 SemVer: patch = fix, minor = new compatible feature, and `0.x` means the API may

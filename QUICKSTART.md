@@ -86,7 +86,7 @@ basic failover works with zero config.
 ```bash
 claude mcp add bvcc-agent-wallet \
   --env BVCC_ENV_FILE=/secure/agent.env \
-  -- npx -y @bvcc/agent-mcp
+  -- npx -y @bvcc/agent-mcp@latest
 ```
 
 **Cursor / Claude app / LM Studio (`mcp.json`):**
@@ -95,7 +95,7 @@ claude mcp add bvcc-agent-wallet \
   "mcpServers": {
     "bvcc-agent-wallet": {
       "command": "npx",
-      "args": ["-y", "@bvcc/agent-mcp"],
+      "args": ["-y", "@bvcc/agent-mcp@latest"],
       "env": { "BVCC_ENV_FILE": "/secure/agent.env" }
     }
   }
